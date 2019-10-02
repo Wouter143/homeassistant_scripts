@@ -1,37 +1,44 @@
-# UNDER CONSTRUCTION, edit 2
 
-# def setInputNr(entity_id):
+def get_entity_config(entity_id):
 
-#     inputDict = {"cover.shutter_front": "input_number.shutter_front_input", 
-#     "cover.shutter_back": "input_number.shutter_back_input", 
-#     "cover.shutter_kitchen": "input_number.shutter_back_input"
-#     }
-#     return inputDict.get(entity_id)
-
-# def setSwitches(entity_id):
-
-#     inputDict = {"cover.shutter_front": ("switch.rolluik_voorkamer_up","switch.rolluik_voorkamer_down"), 
-#     "cover.shutter_back": ("switch.rolluik_achterkamer_up","switch.rolluik_achterkamer_down"), 
-#     "cover.shutter_kitchen": ("switch.rolluik_keuken_up","switch.rolluik_keuken_down")
-#     }
-#     return inputDict.get(entity_id)
+    inputDict = {"cover.shutter_front": ("switch.rolluik_voorkamer_up","switch.rolluik_voorkamer_down","input_number.shutter_front_input"), 
+    "cover.shutter_back": ("switch.rolluik_achterkamer_up","switch.rolluik_achterkamer_down","input_number.shutter_back_input"), 
+    "cover.shutter_kitchen": ("switch.rolluik_keuken_up","switch.rolluik_keuken_down","input_number.shutter_kitchen_input")
+    }
+    return inputDict.get(entity_id)
 
 
-# #retrieve required data from data object
-# direction = data.get('direction')
-# entity_id = data.get('entity_id')
 
-# #retrieve required data from Home Assistant
-# cover_entity = hass.states.get(entity_id)
-# cover_position = cover_entity.attributes.get('current_position')
+#retrieve required data from data object
+entity_id = data.get('entity_id')
 
-# # Check the direction, set switch ID
-# if direction == 'up':
-#     switch = "switch.rolluik_voorkamer_up"
-#     newPosition = 100
-# else:
-#     switch = "switch.rolluik_voorkamer_down"
-#     newPosition = 0
+#retrieve required data from Home Assistant
+cover_entity = hass.states.get(entity_id)
+previous_position = cover_entity.attributes.get('current_position')
+logger.info(previous_position)
+
+#check the direction the shutter is currently going by comparing last_changed 
+#from both switches
+up_last_changed = hass.states.get(get_entity_config(entity_id)[0]).last_changed
+logger.info(up_last_changed)
+down_last_changed = hass.states.get(get_entity_config(entity_id)[1]).last_changed
+logger.info(down_last_changed)
+if up_last_changed > down_last_changed:
+    direction =  'up'
+else:
+    direction = 'down'
+logger.info(direction)
+
+# calculate new position from last_changed states, then stop switch based on current direction.
+
+if direction == 'up':
+    run_time = (up_last_changed - down_last_changed).seconds
+    switch = "switch.rolluik_voorkamer_up"
+    newPosition = 100
+else:
+    run_time = (down_last_changed - up_last_changed).seconds
+    switch = "switch.rolluik_voorkamer_down"
+    newPosition = 0
 
 # #Set the delay time
 # delay = 5
