@@ -1,4 +1,3 @@
-
 def get_entity_config(entity_id):
 
     inputDict = {"cover.shutter_front": ("switch.rolluik_voorkamer_up","switch.rolluik_voorkamer_down","input_number.shutter_front_input"), 
@@ -12,10 +11,13 @@ def get_entity_config(entity_id):
 #retrieve required data from data object
 entity_id = data.get('entity_id')
 
+#Set other variables
+total_run_time = 20
+
 #retrieve required data from Home Assistant
 cover_entity = hass.states.get(entity_id)
-previous_position = cover_entity.attributes.get('current_position')
-logger.info(previous_position)
+current_position = cover_entity.attributes.get('current_position') 
+logger.info(current_position)
 
 #check the direction the shutter is currently going by comparing last_changed 
 #from both switches
@@ -32,28 +34,20 @@ logger.info(direction)
 # calculate new position from last_changed states, then stop switch based on current direction.
 
 if direction == 'up':
-    run_time = (up_last_changed - down_last_changed).seconds
-    switch = "switch.rolluik_voorkamer_up"
-    newPosition = 100
+    run_time_seconds = (datetime.datetime.now()- up_last_changed).seconds
+    run_time_percentage = (run_time/total_run_time)*100
+    new_position = current_position + run_time_percentage
+    switch = get_entity_config(entity_id)[0]
+    
 else:
-    run_time = (down_last_changed - up_last_changed).seconds
-    switch = "switch.rolluik_voorkamer_down"
-    newPosition = 0
+    run_time_seconds = (datetime.datetime.now()- down_last_changed).seconds
+    run_time_percentage = (run_time/total_run_time)*100
+    new_position = current_position - run_time_percentage
+    switch = get_entity_config(entity_id)[1]
+    
+# First stop the switch
+hass.services.call('switch', 'turn_off', {'entity_id':switch}, False)
 
-# #Set the delay time
-# delay = 5
-
-# #First stop both switches
-# switch_up = setSwitches(cover_entity.entity_id)[0]
-# switch_down = setSwitches(cover_entity.entity_id)[1]
-# hass.services.call('switch', 'turn_off', {'entity_id':switch_up}, False)
-# hass.services.call('switch', 'turn_off', {'entity_id':switch_down}, False)
-
-# #Now set currect switch to ON, delay and then back to off again
-# hass.services.call('switch', 'turn_on', {'entity_id':switch}, False)
-# time.sleep(delay)
-# hass.services.call('switch', 'turn_off', {'entity_id':switch}, False)
-
-# #Now update shutter position
-# serviceData = {'entity_id' : setInputNr(cover_entity.entity_id), 'value' : newPosition}
-# hass.services.call('input_number', 'set_value', serviceData, False)
+# Now update shutter position
+service_data = {'entity_id' : get_entity_config(entity_id)[2], 'value' : new_position}
+hass.services.call('input_number', 'set_value', service_data, False)
