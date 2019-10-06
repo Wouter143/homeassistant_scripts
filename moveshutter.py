@@ -1,8 +1,18 @@
+"""" 
+method which return config for an entity in a tuple. Tuples contain the following:
+0: switch entity for 'up' switch.
+1: switch entity for 'down' switch.
+2: input entity for position value
+3: delay for a complete move up
+4: delay for a complete move down
+"""
+
 def get_entity_config(entity_id):
 
-    inputDict = {"cover.shutter_front": ("switch.rolluik_voorkamer_up","switch.rolluik_voorkamer_down","input_number.shutter_front_input"), 
-    "cover.shutter_back": ("switch.rolluik_achterkamer_up","switch.rolluik_achterkamer_down","input_number.shutter_back_input"), 
-    "cover.shutter_kitchen": ("switch.rolluik_keuken_up","switch.rolluik_keuken_down","input_number.shutter_kitchen_input")
+    inputDict = {
+    "cover.shutter_front": ("switch.rolluik_voorkamer_up","switch.rolluik_voorkamer_down","input_number.shutter_front_input",20,20), 
+    "cover.shutter_back": ("switch.rolluik_achterkamer_up","switch.rolluik_achterkamer_down","input_number.shutter_back_input",30,25), 
+    "cover.shutter_kitchen": ("switch.rolluik_keuken_up","switch.rolluik_keuken_down","input_number.shutter_kitchen_input",28,26)
     }
     return inputDict.get(entity_id)
 
@@ -18,12 +28,14 @@ cover_position = cover_entity.attributes.get('current_position')
 if direction == 'up':
     switch = get_entity_config(cover_entity.entity_id)[0]
     newPosition = 100
+    total_move_time = get_entity_config(cover_entity.entity_id)[3]
 else:
     switch = get_entity_config(cover_entity.entity_id)[1]
+    total_move_time = get_entity_config(cover_entity.entity_id)[4]
     newPosition = 0
 
 #Set the delay time
-delay = 20
+delay = total_move_time
 
 #First stop both switches
 switch_up = get_entity_config(cover_entity.entity_id)[0]
