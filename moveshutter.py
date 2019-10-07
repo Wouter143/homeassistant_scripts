@@ -38,16 +38,18 @@ else:
 delay = total_move_time
 
 #First stop both switches
-switch_up = get_entity_config(cover_entity.entity_id)[0]
-switch_down = get_entity_config(cover_entity.entity_id)[1]
-hass.services.call('switch', 'turn_off', {'entity_id':switch_up}, False)
-hass.services.call('switch', 'turn_off', {'entity_id':switch_down}, False)
+# switch_up = get_entity_config(cover_entity.entity_id)[0]
+# switch_down = get_entity_config(cover_entity.entity_id)[1]
+# hass.services.call('switch', 'turn_off', {'entity_id':switch_up}, False)
+# hass.services.call('switch', 'turn_off', {'entity_id':switch_down}, False)
 
 #Now set currect switch to ON, delay and then back to off again
 hass.services.call('switch', 'turn_on', {'entity_id':switch}, False)
 time.sleep(delay)
-hass.services.call('switch', 'turn_off', {'entity_id':switch}, False)
+logger.info(hass.states.get(switch).state)
+if hass.states.get(switch).state == 'on':
+    hass.services.call('switch', 'turn_off', {'entity_id':switch}, False)
+    serviceData = {'entity_id' : get_entity_config(cover_entity.entity_id)[2], 'value' : newPosition}
+    hass.services.call('input_number', 'set_value', serviceData, False)
 
 #Now update shutter position
-serviceData = {'entity_id' : get_entity_config(cover_entity.entity_id)[2], 'value' : newPosition}
-hass.services.call('input_number', 'set_value', serviceData, False)
