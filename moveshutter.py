@@ -24,15 +24,17 @@ entity_id = data.get('entity_id')
 cover_entity = hass.states.get(entity_id)
 cover_position = cover_entity.attributes.get('current_position')
 
-# Check the direction, set switch ID
+# Check the direction, set switch ID, turn  off opposite  switch if applicable  
 if direction == 'up':
     switch = get_entity_config(cover_entity.entity_id)[0]
-    newPosition = 100
+    opposite_switch = get_entity_config(cover_entity.entity_id)[1]
+    new_position = 100
     total_move_time = get_entity_config(cover_entity.entity_id)[3]
 else:
     switch = get_entity_config(cover_entity.entity_id)[1]
+    opposite_switch = get_entity_config(cover_entity.entity_id)[0]
     total_move_time = get_entity_config(cover_entity.entity_id)[4]
-    newPosition = 0
+    new_position = 0
 
 #Set the delay time
 delay = total_move_time
@@ -44,12 +46,24 @@ delay = total_move_time
 # hass.services.call('switch', 'turn_off', {'entity_id':switch_down}, False)
 
 #Now set currect switch to ON, delay and then back to off again
+hass.services.call('switch', 'turn_off', {'entity_id':opposite_switch}, False)
 hass.services.call('switch', 'turn_on', {'entity_id':switch}, False)
 time.sleep(delay)
-logger.info(hass.states.get(switch).state)
-if hass.states.get(switch).state == 'on':
+
+# now renew state objeect, and get  the final cover  position, if it's the same as at the start, turn the switch off, then update position.
+# If it has changed, the shutter was stopped and position is already updated, so do nothing.
+cover_entity = hass.states.get(entity_id)
+cover_position_final = cover_entity.attributes.get('current_position')
+
+logger.info("current_position")
+logger.info(cover_position)
+logger.info("cover_position_final")
+logger.info(cover_position_final)
+
+if cover_position == cover_position_final:
+    logger.info("updating cover position")
     hass.services.call('switch', 'turn_off', {'entity_id':switch}, False)
-    serviceData = {'entity_id' : get_entity_config(cover_entity.entity_id)[2], 'value' : newPosition}
+    serviceData = {'entity_id' : get_entity_config(cover_entity.entity_id)[2], 'value' : new_position}
     hass.services.call('input_number', 'set_value', serviceData, False)
 
 #Now update shutter position
